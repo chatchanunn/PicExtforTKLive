@@ -1,6 +1,6 @@
 # TikTok Shop Image Enlarger Extension
 
-This Chrome extension enlarges product images on the TikTok Shop live product dashboard when you hover over them. A floating 500x500 pixel preview appears above the original image. Clicking anywhere else hides the preview.
+This Chrome extension enlarges product images on the TikTok Shop live product dashboard when you hover over them. A floating 400x400 pixel preview appears above the original image. Clicking anywhere else or moving the mouse away hides the preview.
 
 ## Installation
 1. Open Chrome and navigate to `chrome://extensions`.
