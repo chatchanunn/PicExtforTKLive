@@ -1,11 +1,5 @@
-สร้าง chrome extension
-ที่จะสามารถขยายรูปของเวป https://shop.tiktok.com/streamer/live/product/dashboard
-ที่มีขนาดเล็ก ให้มีขนาดใหญ่ขึ้น ประมาณ 500x500 px
+สร้าง chrome extension ที่จะสามารถขยายรูปของเวป https://shop.tiktok.com/streamer/live/product/dashboard ที่มีขนาดเล็ก ให้มีขนาดใหญ่ขึ้น ประมาณ 500x500 px
 
-โดยจะทำงานจาก <div> ตัวอย่างนี้
-<div class="index-module__card-img--2QctU"><img src="https://p16-oec-va.ibyteimg.com/tos-maliva-i-o3syd03w52-us/3d66eb696f4d4581888c748ceb5cc663~tplv-o3syd03w52-resize-jpeg:300:300.jpeg?dr=15584&amp;nonce=86143&amp;refresh_token=8447087f76b8e136bb1ad23e6d0b0236&amp;from=1523225687&amp;idc=my2&amp;ps=933b5bde&amp;shcp=9b759fb9&amp;shp=5aca9457&amp;t=555f072d" class="w-full"></div>
+เมื่อเลื่อนเม้าส์ไปบนภาพ จะมีภาพขนาดใหญ่แสดงแบบลอยเหนือหน้าเว็บ และหายไปเมื่อคลิกที่อื่น
 
-เมื่อนำเม้าส์ไปวางไว้เหนือภาพที่เกิดขึ้นจาก <div> ตัวอย่างนี้
-ให้ขยายภาพขึ้น เป็น 500x500 px
-โดยเป็นภาพลอยขึ้นมาในลักษณะ modal เหนือภาพเดิม และไม่ไปยุ่งกับโครงสร้างเดิมของหน้าเวป
-เมื่อนำเม้าส์ไปคลิกที่อื่น ภาพหรือ modal นี้จะหายไป
+นอกจากนี้ ยังมี popup ของ extension สำหรับปิดหรือเปิดวิดีโอและเสียงในหน้าไลฟ์ TikTok Shop ได้
