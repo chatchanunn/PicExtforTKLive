@@ -8,13 +8,14 @@
     border: '1px solid #ccc',
     background: '#fff',
     boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-    padding: '4px'
+    padding: '4px',
+    pointerEvents: 'none'
   });
 
   const img = document.createElement('img');
   Object.assign(img.style, {
-    width: '500px',
-    height: '500px',
+    width: '400px',
+    height: '400px',
     objectFit: 'contain'
   });
 
@@ -42,9 +43,11 @@
     }
   });
 
-  document.addEventListener('click', function(e) {
-    if (!modal.contains(e.target)) {
+  document.body.addEventListener('mouseout', function(e) {
+    const container = e.target.closest('div.index-module__card-img--2QctU');
+    if (container && !container.contains(e.relatedTarget)) {
       hideModal();
     }
   });
+
 })();
