@@ -1,0 +1,762 @@
+อยากให้นำ code พวกนี้ไปผสมกับ extension ที่สร้างไว้
+มันเป็น code ของ chrome extension ที่เอาไว้ ปิด-เปิด เสียง และ วิดิโอ ในไลฟ์ tiktok
+เราอยากนำ 2 extension นี้ รวมไว้เป็น extension เดียว
+
+## content.js
+
+(function() {
+  'use strict';
+
+  // Skip if already injected in this window context
+  if (window.__tiktokVideoTogglerInjected) return;
+  window.__tiktokVideoTogglerInjected = true;
+  
+  // Initialize or get existing state
+  window.__tiktokVideoTogglerState = window.__tiktokVideoTogglerState || {
+    enabled: true,
+    isInitialized: false
+  };
+  
+  // Local references
+  const currentState = window.__tiktokVideoTogglerState;
+  let isInitialized = currentState.isInitialized;
+  
+  console.log('TikTok Video Toggler content script loaded in frame:', window.location.href);
+  
+  // Update state reference
+  function updateState(newState) {
+    Object.assign(currentState, newState);
+    isInitialized = currentState.isInitialized;
+  }
+  
+  // Toggle video container visibility and mute audio
+  function toggleVideoContainer(show) {
+    try {
+      console.log('Toggling video container and audio, show:', show);
+      
+      // Try different selectors for the video container
+      const videoSelectors = [
+        '.live-room-video-container',
+        '.video-feed-container',
+        'video',
+        'iframe[src*="tiktok.com"]',
+        '.video-container',
+        '[class*="video"][class*="container"], [class*="player"][class*="container"]'
+      ];
+      
+      // Selectors for audio elements
+      const audioSelectors = [
+        'audio',
+        'video',  // video elements also have audio
+        'iframe[src*="tiktok.com"]',
+        '[class*="audio"], [class*="volume"]',
+        'video::-webkit-media-controls-mute-button'
+      ];
+      
+      let toggledAny = false;
+      
+      // Toggle video containers
+      videoSelectors.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        if (elements && elements.length > 0) {
+          elements.forEach(el => {
+            if (el) {
+              // Toggle display for video containers
+              el.style.display = show ? '' : 'none';
+              
+              // If it's a video element, also pause it
+              if (el.tagName === 'VIDEO') {
+                if (show) {
+                  el.play().catch(e => console.log('Could not play video:', e));
+                } else {
+                  el.pause();
+                }
+              }
+              
+              toggledAny = true;
+              console.log('Toggled video element with selector:', selector);
+            }
+          });
+        }
+      });
+      
+      // Toggle audio
+      audioSelectors.forEach(selector => {
+        const elements = document.querySelectorAll(selector);
+        if (elements && elements.length > 0) {
+          elements.forEach(el => {
+            if (el) {
+              try {
+                if (el.muted !== undefined) {
+                  el.muted = !show;  // Mute when hiding, unmute when showing
+                  console.log('Toggled audio for element:', selector, 'muted:', !show);
+                  toggledAny = true;
+                }
+                
+                // For video elements, also ensure they're paused
+                if (el.tagName === 'VIDEO' && !show) {
+                  el.pause();
+                }
+              } catch (e) {
+                console.log('Could not toggle audio for element:', selector, e);
+              }
+            }
+          });
+        }
+      });
+      
+      // Additional attempt to find and mute any playing audio
+      if (!show) {
+        document.querySelectorAll('video, audio').forEach(media => {
+          try {
+            media.pause();
+            media.muted = true;
+            media.volume = 0;
+          } catch (e) {
+            console.log('Could not mute media element:', e);
+          }
+        });
+      }
+      
+      if (!toggledAny) {
+        console.warn('No video/audio elements found to toggle');
+      }
+      
+      return toggledAny;
+    } catch (error) {
+      console.error('Error in toggleVideoContainer:', error);
+      return false;
+    }
+  }
+  
+  // Add minimal styles
+  function addStyles() {
+    if (document.getElementById('tiktok-video-toggler-styles')) return;
+    
+    const style = document.createElement('style');
+    style.id = 'tiktok-video-toggler-styles';
+    style.textContent = `
+      /* Minimal styles for video toggler */
+      .tiktok-video-toggler-hidden {
+        display: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  // Message handler
+  chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+    console.log('Received message:', request.action, request);
+    
+    if (request.action === 'toggleVideo') {
+      currentState.enabled = request.enabled;
+      const success = toggleVideoContainer(request.enabled);
+      sendResponse({ 
+        success: success, 
+        enabled: currentState.enabled,
+        action: 'toggleVideo'
+      });
+      return true;
+    }
+    
+    if (request.action === 'getState') {
+      sendResponse({
+        enabled: currentState.enabled,
+        action: 'getState',
+        initialized: isInitialized
+      });
+      return true;
+    }
+    
+    if (request.action === 'ping') {
+      sendResponse({ 
+        pong: true,
+        action: 'ping',
+        initialized: isInitialized,
+        enabled: currentState.enabled
+      });
+      return true;
+    }
+    
+    sendResponse({ error: 'Unknown action' });
+    return true;
+  });
+  
+  // Initialize when DOM is ready
+  function initialize() {
+    if (isInitialized) return;
+    
+    try {
+      addStyles();
+      updateState({ isInitialized: true });
+      console.log('TikTok Video Toggler initialized - Video/Audio Toggle Only');
+      toggleVideoContainer(currentState.enabled);
+    } catch (error) {
+      console.error('Error initializing content script:', error);
+    }
+  }
+  
+  // Start initialization when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+  } else {
+    initialize();
+  }
+  
+  // Expose public API
+  window.tiktokVideoToggler = {
+    currentState: currentState,
+    toggleVideoContainer: toggleVideoContainer
+  };
+  
+})();
+
+
+## manifest.json
+{
+  "manifest_version": 3,
+  "name": "TikTok Shop Video Toggler",
+  "version": "1.1",
+  "description": "Toggle TikTok Shop live video feed to save system resources",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "*://*.tiktok.com/*",
+    "*://*.tiktokv.com/*",
+    "*://*.tiktokglobalshop.com/*",
+    "*://*.tiktokcdn.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    },
+    "default_title": "TikTok Shop Video Toggler"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://shop.tiktok.com/streamer/*",
+        "*://seller-th.tiktok.com/streamer/*"
+      ],
+      "js": ["content.js"],
+      "all_frames": true,
+      "match_about_blank": true,
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [{
+    "resources": ["content.js"],
+    "matches": ["<all_urls>"]
+  }],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
+
+
+## popup.html
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      width: 200px;
+      padding: 15px;
+      font-family: Arial, sans-serif;
+    }
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #fe2c55;
+    }
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    .status {
+      margin-top: 10px;
+      padding: 5px;
+      border-radius: 4px;
+      text-align: center;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="toggle-container">
+    <span>Video Feed:</span>
+    <label class="switch">
+      <input type="checkbox" id="videoToggle">
+      <span class="slider"></span>
+    </label>
+  </div>
+  <div id="status" class="status"></div>
+  <script src="popup.js"></script>
+</body>
+</html>
+
+
+## popup.js
+document.addEventListener('DOMContentLoaded', function() {
+  const toggle = document.getElementById('videoToggle');
+  const statusDiv = document.getElementById('status');
+  let currentTabId = null;
+  let isEnabled = false;
+  let isInitialized = false;
+
+  // Function to update the UI based on the current state
+  function updateStatus(enabled, fromStorage = false) {
+    if (isEnabled === enabled && !fromStorage) return;
+    
+    isEnabled = enabled;
+    toggle.checked = enabled;
+    statusDiv.textContent = enabled ? 'Video feed: ON' : 'Video feed: OFF';
+    statusDiv.style.backgroundColor = enabled ? '#e6f7e6' : '#ffe6e6';
+    
+    if (!fromStorage) {
+      // Save the state
+      chrome.storage.sync.set({ videoEnabled: enabled });
+    }
+  }
+
+  // Function to check if content script is injected
+  function isContentScriptInjected(callback) {
+    if (!currentTabId) return false;
+    
+    chrome.scripting.executeScript({
+      target: { tabId: currentTabId },
+      function: () => {
+        return !!window.__tiktokVideoTogglerInjected;
+      }
+    }, (results) => {
+      if (chrome.runtime.lastError) {
+        console.log('Content script check failed (will retry):', chrome.runtime.lastError.message);
+        callback(false);
+      } else {
+        const isInjected = results && results[0] && results[0].result === true;
+        console.log('Content script check result:', isInjected);
+        callback(isInjected);
+      }
+    });
+  }
+
+  // Function to inject content script if not already injected
+  function ensureContentScript(callback) {
+    isContentScriptInjected((isInjected) => {
+      if (isInjected) {
+        callback(true);
+        return;
+      }
+      
+      console.log('Injecting content script...');
+      chrome.scripting.executeScript({
+        target: { tabId: currentTabId },
+        files: ['content.js']
+      }, () => {
+        if (chrome.runtime.lastError) {
+          console.error('Failed to inject content script:', chrome.runtime.lastError.message);
+          callback(false);
+        } else {
+          console.log('Content script injected successfully');
+          // Small delay to allow content script to initialize
+          setTimeout(() => callback(true), 100);
+        }
+      });
+    });
+  }
+
+  // Function to check if content script is ready
+  function checkContentScriptReady(callback) {
+    if (!currentTabId) {
+      callback(false);
+      return;
+    }
+
+    // Send a ping message to check if content script is ready
+    chrome.tabs.sendMessage(
+      currentTabId,
+      { action: 'ping' },
+      { frameId: 0 }, // Send to main frame
+      (response) => {
+        if (chrome.runtime.lastError) {
+          console.log('Ping failed:', chrome.runtime.lastError.message);
+          callback(false);
+        } else {
+          console.log('Ping response:', response);
+          callback(!!(response && response.pong));
+        }
+      }
+    );
+  }
+
+
+  // Function to send message to content script with retry logic
+  function sendMessageToContent(message, callback, retries = 3) {
+    if (!currentTabId) {
+      console.error('No active tab found');
+      if (callback) callback({ error: 'No active tab' });
+      return;
+    }
+
+    const sendMessage = (attempt = 0) => {
+      console.log(`Sending message (attempt ${attempt + 1}/${retries}):`, message);
+      
+      chrome.tabs.sendMessage(
+        currentTabId,
+        message,
+        { frameId: 0 }, // Ensure we're sending to the main frame
+        (response) => {
+          if (chrome.runtime.lastError) {
+            console.log('Message send error:', chrome.runtime.lastError.message);
+            
+            if (attempt < retries - 1) {
+              console.log(`Retrying in 200ms... (${attempt + 1}/${retries})`);
+              setTimeout(() => {
+                ensureContentScript((success) => {
+                  if (success) {
+                    sendMessage(attempt + 1);
+                  } else if (callback) {
+                    console.error('Failed to ensure content script');
+                    fallbackToStorage(callback);
+                  }
+                });
+              }, 200);
+            } else {
+              console.error('Max retries reached');
+              fallbackToStorage(callback);
+            }
+          } else if (response) {
+            console.log('Message response:', response);
+            if (callback) callback(response);
+          } else if (callback) {
+            console.error('No response from content script');
+            fallbackToStorage(callback);
+          }
+        }
+      );
+    };
+
+    // Helper function to fall back to storage
+    const fallbackToStorage = (cb) => {
+      chrome.storage.sync.get(['videoEnabled'], function(result) {
+        const isEnabled = result.videoEnabled !== false;
+        console.log('Falling back to storage, enabled:', isEnabled);
+        updateStatus(isEnabled);
+        if (cb) cb({ 
+          error: 'Using fallback storage', 
+          enabled: isEnabled,
+          fromStorage: true 
+        });
+      });
+    };
+
+    // First check if content script is ready
+    checkContentScriptReady((isReady) => {
+      if (isReady) {
+        console.log('Content script is ready, sending message');
+        sendMessage();
+      } else {
+        console.log('Content script not ready, injecting...');
+        ensureContentScript((success) => {
+          if (success) {
+            // Small delay to allow content script to initialize
+            setTimeout(() => sendMessage(), 100);
+          } else if (callback) {
+            console.error('Failed to inject content script');
+            fallbackToStorage(callback);
+          }
+        });
+      }
+    });
+  }
+
+  // Simple message sender with retry and better error handling
+  function sendMessage(message, callback, retry = 3) {
+    if (retry <= 0) {
+      console.error('Max retries reached');
+      if (callback) callback({ error: 'Max retries reached' });
+      return;
+    }
+
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      if (!tabs || tabs.length === 0) {
+        const error = 'No active tab found';
+        console.error(error);
+        statusDiv.textContent = error;
+        toggle.disabled = true;
+        if (callback) callback({ error });
+        return;
+      }
+
+      const tab = tabs[0];
+      currentTabId = tab.id;
+
+      // Check if we're on a TikTok Shop page
+      if (!tab.url || !tab.url.includes('tiktok.com/streamer/')) {
+        const error = 'Please open TikTok Shop Streamer Dashboard';
+        console.error(error);
+        statusDiv.textContent = error;
+        toggle.disabled = true;
+        if (callback) callback({ error });
+        return;
+      }
+
+      // Try to send message to content script
+      try {
+        chrome.tabs.sendMessage(
+          currentTabId,
+          message,
+          { frameId: 0 }, // Target the main frame
+          (response) => {
+            if (chrome.runtime.lastError) {
+              console.log('Message error, retrying...', chrome.runtime.lastError);
+              setTimeout(() => sendMessage(message, callback, retry - 1), 200);
+            } else if (callback) {
+              callback(response || {});
+            }
+          }
+        );
+      } catch (error) {
+        console.error('Error sending message:', error);
+        if (retry > 0) {
+          setTimeout(() => sendMessage(message, callback, retry - 1), 200);
+        } else if (callback) {
+          callback({ error: error.message });
+        }
+      }
+    });
+  }
+
+  // Initialize the popup
+  function initialize() {
+    if (isInitialized) return;
+    
+    console.log('Initializing popup...');
+    
+    // First try to inject content script
+    injectContentScript((success) => {
+      if (success) {
+        // After injection, try to ping
+        pingContentScript((pong) => {
+          if (pong) {
+            console.log('Content script is ready');
+            // Get current state
+            getContentScriptState();
+          } else {
+            console.log('Content script not responding, using stored state');
+            fallbackToStoredState();
+          }
+        });
+      } else {
+        console.error('Failed to inject content script');
+        fallbackToStoredState();
+      }
+    });
+    
+    isInitialized = true;
+  }
+  
+  // Ping content script with retry
+  function pingContentScript(callback, retry = 3) {
+    if (retry <= 0) {
+      callback(false);
+      return;
+    }
+    
+    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+      if (!tabs || tabs.length === 0) {
+        setTimeout(() => pingContentScript(callback, retry - 1), 200);
+        return;
+      }
+      
+      const tab = tabs[0];
+      currentTabId = tab.id;
+      
+      chrome.tabs.sendMessage(
+        currentTabId,
+        { action: 'ping' },
+        { frameId: 0 },
+        (response) => {
+          if (chrome.runtime.lastError || !response) {
+            console.log('Ping failed, retrying...');
+            setTimeout(() => pingContentScript(callback, retry - 1), 200);
+          } else {
+            callback(true);
+          }
+        }
+      );
+    });
+  }
+  
+  // Get state from content script
+  function getContentScriptState() {
+    sendMessage(
+      { action: 'getState' },
+      (response) => {
+        if (response && response.enabled !== undefined) {
+          console.log('Got state from content script:', response.enabled);
+          updateStatus(response.enabled);
+        } else {
+          console.log('Could not get state from content script');
+          fallbackToStoredState();
+        }
+      }
+    );
+  }
+  
+  // Inject content script if not already injected
+  function injectContentScript(callback) {
+    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+      if (!tabs || tabs.length === 0) {
+        console.error('No active tab found');
+        if (callback) callback(false);
+        return;
+      }
+      
+      const tab = tabs[0];
+      currentTabId = tab.id;
+      
+      // Check if we're on a TikTok Shop page
+      if (!tab.url || !tab.url.includes('tiktok.com/streamer/')) {
+        console.error('Not on TikTok Shop Streamer page');
+        statusDiv.textContent = 'Please open TikTok Shop Streamer Dashboard';
+        toggle.disabled = true;
+        if (callback) callback(false);
+        return;
+      }
+      
+      console.log('Injecting content script into tab:', tab.id);
+      
+      // First try to execute script directly
+      chrome.scripting.executeScript({
+        target: { tabId: currentTabId, allFrames: false },
+        files: ['content.js']
+      })
+      .then(() => {
+        console.log('Content script injected successfully');
+        if (callback) callback(true);
+      })
+      .catch((error) => {
+        console.error('Failed to inject content script:', error);
+        // Fallback to programmatic injection
+        const script = document.createElement('script');
+        script.src = chrome.runtime.getURL('content.js');
+        script.onload = () => {
+          script.remove();
+          console.log('Content script injected via programmatic injection');
+          if (callback) callback(true);
+        };
+        script.onerror = () => {
+          console.error('Programmatic injection failed');
+          if (callback) callback(false);
+        };
+        (document.head || document.documentElement).appendChild(script);
+      });
+    });
+  }
+  
+  // Fallback to stored state
+  function fallbackToStoredState() {
+    console.log('Falling back to stored state');
+    chrome.storage.sync.get(['videoEnabled'], (result) => {
+      const enabled = result.videoEnabled !== false;
+      updateStatus(enabled, true);
+      // Try to sync with content script
+      sendMessage({ 
+        action: 'toggleVideo', 
+        enabled: enabled 
+      });
+    });
+  }
+  
+  // Run initialization when popup opens
+  initialize();
+  
+  // Re-initialize when tab is updated
+  chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (changeInfo.status === 'complete' && tab.active) {
+      initialize();
+    }
+  });
+
+  // Toggle video when switch is clicked
+  toggle.addEventListener('change', function() {
+    const newState = toggle.checked;
+    
+    // Update UI immediately for better responsiveness
+    updateStatus(newState);
+    
+    // Save the state
+    chrome.storage.sync.set({ videoEnabled: newState });
+    
+    // Send message to content script
+    sendMessage({
+      action: 'toggleVideo',
+      enabled: newState
+    }, (response) => {
+      if (!response || !response.success) {
+        // Revert UI if failed
+        updateStatus(!newState);
+      }
+    });
+  });
+
+  // Listen for messages from the background script (if needed in the future)
+  chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+    if (request.action === 'updateState') {
+      updateStatus(request.enabled);
+    }
+    return true;
+  });
+
+  // Initial status update
+  updateStatus(false);
+});
+
+
+โดยดูความเป็นไปได้ก่อนว่าสามารถรวมได้มั้ย ถ้าไม่ได้ ก็ไม่เป็นไร 
