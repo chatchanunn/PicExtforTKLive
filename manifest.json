@@ -1,26 +1,44 @@
 {
   "manifest_version": 3,
-  "name": "TikTok Shop Image Enlarger",
-  "version": "1.0",
-  "description": "Enlarge product images on TikTok Shop dashboard to 400x400 pixels.",
+  "name": "TikTok Shop Enhancer",
+  "version": "1.1",
+  "description": "Enlarge product images and toggle live video/audio on TikTok Shop.",
+  "permissions": ["activeTab", "scripting", "storage", "tabs"],
+  "host_permissions": [
+    "*://*.tiktok.com/*",
+    "*://*.tiktokv.com/*",
+    "*://*.tiktokglobalshop.com/*",
+    "*://*.tiktokcdn.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+    },
+    "default_title": "TikTok Shop Enhancer"
+  },
   "content_scripts": [
     {
       "matches": ["https://shop.tiktok.com/streamer/live/product/dashboard*"],
       "js": ["content.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://shop.tiktok.com/streamer/*",
+        "*://seller-th.tiktok.com/streamer/*"
+      ],
+      "js": ["video_toggler_content.js"],
+      "all_frames": true,
+      "match_about_blank": true,
+      "run_at": "document_start"
     }
   ],
   "icons": {
     "16": "icon.png",
     "48": "icon.png",
     "128": "icon.png"
-  },
-  "action": {
-    "default_icon": {
-      "16": "icon.png",
-      "48": "icon.png",
-      "128": "icon.png"
-    },
-    "default_title": "TikTok Shop Image Zoom"
   }
 }
