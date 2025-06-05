@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "TikTok Shop Image Enlarger",
+  "version": "1.0",
+  "description": "Enlarge product images on TikTok Shop dashboard to 500x500 pixels.",
+  "content_scripts": [
+    {
+      "matches": ["https://shop.tiktok.com/streamer/live/product/dashboard*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
