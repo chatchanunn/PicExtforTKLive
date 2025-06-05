@@ -50,9 +50,4 @@
     }
   });
 
-  document.addEventListener('click', function(e) {
-    if (!modal.contains(e.target)) {
-      hideModal();
-    }
-  });
 })();
