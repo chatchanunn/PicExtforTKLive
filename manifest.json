@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "TikTok Shop Enhancer",
-  "version": "1.1",
-  "description": "Enlarge product images and toggle live video/audio on TikTok Shop.",
+  "version": "1.2",
+  "description": "Enhance TikTok Shop with chat checkboxes, image enlargement, and live video/audio controls.",
   "permissions": ["activeTab", "scripting", "storage", "tabs"],
   "host_permissions": [
     "*://*.tiktok.com/*",
@@ -22,7 +22,8 @@
   "content_scripts": [
     {
       "matches": ["https://shop.tiktok.com/streamer/live/product/dashboard*"],
-      "js": ["content.js"],
+      "js": ["chat_checkbox.js"],
+      "css": ["chat_styles.css"],
       "run_at": "document_idle"
     },
     {
@@ -34,6 +35,12 @@
       "all_frames": true,
       "match_about_blank": true,
       "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["chat_styles.css"],
+      "matches": ["https://shop.tiktok.com/*"]
     }
   ],
   "icons": {

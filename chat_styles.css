@@ -1,0 +1,66 @@
+/* Style for checkboxes in chat */
+.tiktok-chat-checkbox {
+  margin-right: 8px;
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  margin-top: 2px;
+  position: relative;
+  top: 2px;
+  flex-shrink: 0;
+}
+
+/* Container for each chat message */
+.text-neutral-text1.pl-32.text-body-m-regular {
+  display: flex !important;
+  align-items: flex-start;
+  padding: 6px 8px !important;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  width: 100%;
+  box-sizing: border-box;
+  line-height: 1.4;
+  position: relative;
+  margin: 2px 0;
+}
+
+/* Style for checked messages */
+.text-neutral-text1.pl-32.text-body-m-regular.checked {
+  background-color: rgba(34, 197, 94, 0.1) !important;
+  padding-right: 28px !important; /* Space for checkmark */
+}
+
+/* Checkmark for checked messages */
+.text-neutral-text1.pl-32.text-body-m-regular.checked::after {
+  content: '✅';
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* Hover effect */
+.text-neutral-text1.pl-32.text-body-m-regular:hover {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Ensure the message text takes available space */
+.text-neutral-text1.pl-32.text-body-m-regular > span {
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+/* Make sure the checkbox is properly aligned with the text */
+.text-neutral-text1.pl-32.text-body-m-regular > .tiktok-chat-checkbox {
+  position: relative;
+  top: 3px;
+}
+
+/* Adjust the padding to account for the checkbox */
+.text-neutral-text1.pl-32.text-body-m-regular {
+  padding-left: 8px !important;
+}
