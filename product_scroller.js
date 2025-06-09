@@ -252,19 +252,27 @@ function createPinButton(productNumber) {
     
     // Helper function to find pin button in product item
     function findPinButtonInProduct(productItem) {
+        // Common selectors for known pin buttons
         const selectors = [
             '[data-testid="pin-button"]',
             '[aria-label*="pin" i]',
-            'button:has(> span:contains("Pin")), button:has(> span:contains("ปักหมุด"))',
-            'button:contains("Pin"), button:contains("ปักหมุด")',
-            'button[class*="pin"], button[class*="Pin"]',
+            'button[class*="pin" i]',
             '[role="button"][aria-pressed]'
         ];
-        
+
         for (const selector of selectors) {
-            const buttons = Array.from(productItem.querySelectorAll(selector));
-            if (buttons.length > 0) {
-                return buttons[0];
+            const btn = productItem.querySelector(selector);
+            if (btn) {
+                return btn;
+            }
+        }
+
+        // Fallback: search all buttons and match text manually
+        const buttons = Array.from(productItem.querySelectorAll('button'));
+        for (const button of buttons) {
+            const text = button.innerText || button.textContent || '';
+            if (/pin|ปักหมุด/i.test(text)) {
+                return button;
             }
         }
         return null;
