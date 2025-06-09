@@ -21,15 +21,27 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://shop.tiktok.com/streamer/live/product/dashboard*"],
-      "js": ["chat_checkbox.js"],
-      "css": ["chat_styles.css"],
-      "run_at": "document_idle"
+      "matches": [
+        "https://shop.tiktok.com/*",
+        "https://seller-th.tiktok.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_end"
     },
     {
       "matches": [
-        "*://shop.tiktok.com/streamer/*",
-        "*://seller-th.tiktok.com/streamer/*"
+        "https://shop.tiktok.com/streamer/*",
+        "https://seller-th.tiktok.com/streamer/*"
+      ],
+      "js": ["product_scroller.js"],
+      "css": ["chat_styles.css"],
+      "all_frames": true,
+      "run_at": "document_end"
+    },
+    {
+      "matches": [
+        "https://shop.tiktok.com/streamer/*",
+        "https://seller-th.tiktok.com/streamer/*"
       ],
       "js": ["video_toggler_content.js"],
       "all_frames": true,

@@ -1,73 +1,89 @@
 document.addEventListener('DOMContentLoaded', () => {
   const videoToggle = document.getElementById('videoToggle');
-  const audioToggle = document.getElementById('audioToggle');
   const statusDiv = document.getElementById('status');
   let currentTabId = null;
 
-  function updateStatus(videoEnabled, audioEnabled) {
+  function updateStatus(videoEnabled) {
     videoToggle.checked = videoEnabled;
-    audioToggle.checked = audioEnabled;
-    statusDiv.textContent = `Video: ${videoEnabled ? 'ON' : 'OFF'} | Audio: ${audioEnabled ? 'ON' : 'MUTED'}`;
+    statusDiv.textContent = `Live Video: ${videoEnabled ? 'ON' : 'OFF'}`;
     statusDiv.style.backgroundColor = videoEnabled ? '#e6f7e6' : '#ffe6e6';
+    statusDiv.style.fontWeight = '500';
   }
 
   function sendMessage(message, callback) {
     chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
       if (!tabs || !tabs.length) return;
       currentTabId = tabs[0].id;
-      chrome.tabs.sendMessage(currentTabId, message, response => {
-        if (chrome.runtime.lastError) {
-          console.error('Error sending message:', chrome.runtime.lastError);
-          statusDiv.textContent = 'Error: TikTok page not responding. Please refresh the page.';
-          statusDiv.style.backgroundColor = '#ffebee';
-          return;
-        }
-        if (callback) callback(response);
-      });
+      
+      // Check if we're on a TikTok page before sending message
+      const url = tabs[0].url;
+      if (!url || !url.includes('tiktok.com')) {
+        console.log('Not on a TikTok page, skipping message');
+        if (callback) callback({ success: false, error: 'Not on TikTok page' });
+        return;
+      }
+      
+      // Send message with error handling
+      try {
+        chrome.tabs.sendMessage(currentTabId, message, response => {
+          // Handle response if callback exists
+          if (chrome.runtime.lastError) {
+            // Ignore errors when content script isn't available
+            if (chrome.runtime.lastError.message.includes('Receiving end does not exist')) {
+              console.log('Content script not available on this page');
+              if (callback) callback({ success: false, error: 'Content script not available' });
+              return;
+            }
+            console.error('Error sending message:', chrome.runtime.lastError);
+            statusDiv.textContent = 'Error: TikTok page not responding. Please refresh the page.';
+            statusDiv.style.backgroundColor = '#ffebee';
+            return;
+          }
+          if (callback) callback(response);
+        });
+      } catch (error) {
+        console.error('Error in sendMessage:', error);
+        if (callback) callback({ success: false, error: error.message });
+      }
     });
   }
 
   videoToggle.addEventListener('change', () => {
     const enabled = videoToggle.checked;
+    // Toggle both video and audio together
     chrome.storage.sync.set({ videoEnabled: enabled }, () => {
-      sendMessage({ action: 'toggleVideo', enabled }, res => {
+      sendMessage({ 
+        action: 'toggleVideoAndAudio', 
+        enabled: enabled 
+      }, res => {
         if (!res || !res.success) {
-          updateStatus(!enabled, audioToggle.checked);
+          updateStatus(!enabled);
         }
       });
     });
   });
 
-  audioToggle.addEventListener('change', () => {
-    const enabled = audioToggle.checked;
-    chrome.storage.sync.set({ audioEnabled: enabled }, () => {
-      sendMessage({ action: 'toggleAudio', enabled }, res => {
-        if (!res || !res.success) {
-          updateStatus(videoToggle.checked, !enabled);
-        }
-      });
-    });
-  });
-
-  // Initialize toggles from storage
-  chrome.storage.sync.get(['videoEnabled', 'audioEnabled'], result => {
+  // Initialize from storage
+  chrome.storage.sync.get(['videoEnabled'], result => {
     const videoEnabled = result.videoEnabled !== false; // Default to true
-    const audioEnabled = result.audioEnabled !== false; // Default to true
     
     // Update UI first
-    updateStatus(videoEnabled, audioEnabled);
+    updateStatus(videoEnabled);
     
-    // Then send messages to content script
-    sendMessage({ action: 'toggleVideo', enabled: videoEnabled });
-    sendMessage({ action: 'toggleAudio', enabled: audioEnabled });
+    // Then send message to content script
+    sendMessage({ 
+      action: 'toggleVideoAndAudio', 
+      enabled: videoEnabled 
+    });
   });
 
   // Periodically check if the content script is responding
   setInterval(() => {
     sendMessage({ action: 'ping' }, (response) => {
       if (!response || !response.pong) {
-        statusDiv.textContent = 'Error: Content script not responding. Try refreshing the page.';
+        statusDiv.textContent = 'Error: Please refresh the TikTok Live page';
         statusDiv.style.backgroundColor = '#fff3e0';
+        statusDiv.style.color = '#d32f2f';
       }
     });
   }, 2000);

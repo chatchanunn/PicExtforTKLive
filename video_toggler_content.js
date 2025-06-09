@@ -69,15 +69,23 @@
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     try {
       switch (request.action) {
-        case 'toggleVideo':
+        case 'toggleVideoAndAudio':
+          // Update both video and audio states together
           currentState.videoEnabled = request.enabled;
-          toggleVideoContainer(request.enabled);
-          sendResponse({ success: true });
-          return true;
-          
-        case 'toggleAudio':
           currentState.audioEnabled = request.enabled;
+          
+          // Toggle video visibility
+          toggleVideoContainer(request.enabled);
+          
+          // Toggle audio state (mute/unmute)
           toggleAudio(request.enabled);
+          
+          // Save the state
+          chrome.storage.sync.set({
+            videoEnabled: currentState.videoEnabled
+          });
+          
+          console.log(`Video and Audio ${request.enabled ? 'enabled' : 'disabled'}`);
           sendResponse({ success: true });
           return true;
           
@@ -104,33 +112,32 @@
   function initialize() {
     if (currentState.isInitialized) return;
     
-    // Get saved states from Chrome storage
-    chrome.storage.sync.get(['videoEnabled', 'audioEnabled'], (result) => {
+    // Load saved states
+    chrome.storage.sync.get(['videoEnabled'], (result) => {
       const videoEnabled = result.videoEnabled !== false; // Default to true
-      const audioEnabled = result.audioEnabled !== false; // Default to true
       
-      // Update state
+      // Update both video and audio states together
       currentState.videoEnabled = videoEnabled;
-      currentState.audioEnabled = audioEnabled;
-      currentState.isInitialized = true;
+      currentState.audioEnabled = videoEnabled;
       
       // Apply the states
       toggleVideoContainer(videoEnabled);
-      toggleAudio(audioEnabled);
+      toggleAudio(videoEnabled);
+      
+      console.log('TikTok Video Toggler initialized with state:', currentState);
     });
-    
-    // Watch for dynamically added video/audio elements
+
+    // Observe DOM changes to handle dynamically loaded content
     const observer = new MutationObserver((mutations) => {
-      if (currentState.isInitialized) {
-        toggleVideoContainer(currentState.videoEnabled);
-        toggleAudio(currentState.audioEnabled);
+      if (!currentState.videoEnabled) {
+        toggleVideoContainer(false);
+      }
+      if (!currentState.audioEnabled) {
+        toggleAudio(false);
       }
     });
-    
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true
-    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
   }
 
   // Initialize when the page is ready

@@ -1,16 +1,3 @@
-/* Style for checkboxes in chat */
-.tiktok-chat-checkbox {
-  margin-right: 8px;
-  cursor: pointer;
-  width: 16px;
-  height: 16px;
-  min-width: 16px;
-  margin-top: 2px;
-  position: relative;
-  top: 2px;
-  flex-shrink: 0;
-}
-
 /* Container for each chat message */
 .text-neutral-text1.pl-32.text-body-m-regular {
   display: flex !important;
@@ -25,26 +12,69 @@
   margin: 2px 0;
 }
 
-/* Style for checked messages */
-.text-neutral-text1.pl-32.text-body-m-regular.checked {
-  background-color: rgba(34, 197, 94, 0.1) !important;
-  padding-right: 28px !important; /* Space for checkmark */
-}
-
-/* Checkmark for checked messages */
-.text-neutral-text1.pl-32.text-body-m-regular.checked::after {
-  content: '✅';
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 14px;
-  line-height: 1;
-}
-
 /* Hover effect */
 .text-neutral-text1.pl-32.text-body-m-regular:hover {
   background-color: rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Pin button styles */
+.product-number-container {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  margin: 0 2px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  padding: 2px 6px 2px 4px;
+  transition: all 0.2s ease;
+  height: 24px;
+  line-height: 1;
+}
+
+.pin-button {
+  margin-left: 6px;
+  height: 20px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  background-color: #FE2C55;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 32px;
+}
+
+.pin-button:hover {
+  background-color: #F02A50;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pin-button.pinned {
+  background-color: #F1F1F2;
+  color: #161823;
+  border-color: #E3E3E4;
+}
+
+.pin-button.pinned:hover {
+  background-color: #E7E7E9;
+}
+
+/* Make sure the pin button text is properly aligned */
+.pin-button span {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Ensure the message text takes available space */
