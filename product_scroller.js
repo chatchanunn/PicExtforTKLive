@@ -759,7 +759,8 @@ function processChatMessage(messageElement) {
 }
 
 // Function to handle click on chat messages (legacy)
-function handleChatMessageClick(event) {
+// Retained for reference but not used. The main handler is defined earlier.
+function legacyHandleChatMessageClick(event) {
     // Prevent multiple processing
     if (event.handledByExtension) return;
     
@@ -894,8 +895,14 @@ function initProductScroller() {
     // Add click handler to document and delegate events
     console.log('Adding click event listener to document');
     document.addEventListener('click', (e) => {
+        // Ignore clicks on pin buttons so their own handlers can run
+        if (e.target.closest('.pin-button, .m4b-button, [data-pin-button]')) {
+            console.log('Pin button clicked, skipping document handler');
+            return;
+        }
+
         // Check if click is on a product number or its container
-        const productElement = e.target.closest('.product-number-container') || 
+        const productElement = e.target.closest('.product-number-container') ||
                               e.target.closest('.product-number');
         
         if (productElement) {
@@ -926,7 +933,7 @@ function initProductScroller() {
                 classes: messageElement.className,
                 id: messageElement.id
             });
-            handleChatMessageClick(e);
+            handleMessageClick(e);
         }
     }, true); // Use capture phase to catch events earlier
     
