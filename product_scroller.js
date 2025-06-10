@@ -162,37 +162,83 @@ function createPinButton(productNumber) {
     const pinButton = document.createElement('button');
     
     // Set button properties
-    pinButton.className = 'arco-btn arco-btn-primary arco-btn-size-mini arco-btn-shape-square m4b-button pin-button';
+    pinButton.className = 'm4b-button pin-button';
     pinButton.setAttribute('data-tid', 'chat_pin_button');
     pinButton.title = 'Pin this product';
     pinButton.setAttribute('data-product-number', productNumber);
     pinButton.setAttribute('data-pin-button', 'true');
+    pinButton.setAttribute('aria-label', `Pin product ${productNumber}`);
     
     // Apply styles
     Object.assign(pinButton.style, {
-        pointerEvents: 'auto',
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '0 6px',
-        marginLeft: '4px',
+        padding: '2px 6px',
+        margin: '0 2px',
         cursor: 'pointer',
-        border: 'none',
-        background: 'transparent',
-        transition: 'all 0.2s ease'
+        border: '1px solid #d9d9d9',
+        borderRadius: '4px',
+        backgroundColor: '#f5f5f5',
+        color: '#262626',
+        fontSize: '12px',
+        lineHeight: '1',
+        transition: 'all 0.2s',
+        verticalAlign: 'middle',
+        minWidth: '24px',
+        height: '20px',
+        boxSizing: 'border-box',
+        outline: 'none'
+    });
+    
+    // Add hover and active states
+    pinButton.addEventListener('mouseenter', () => {
+        pinButton.style.backgroundColor = '#e6f7ff';
+        pinButton.style.borderColor = '#69c0ff';
+        pinButton.style.color = '#096dd9';
+    });
+    
+    pinButton.addEventListener('mouseleave', () => {
+        if (!pinButton.classList.contains('pinned')) {
+            pinButton.style.backgroundColor = '#f5f5f5';
+            pinButton.style.borderColor = '#d9d9d9';
+            pinButton.style.color = '#262626';
+        }
     });
     
     // Add pin icon
     const pinIcon = document.createElement('span');
     pinIcon.textContent = '📌';
+    pinIcon.style.display = 'inline-flex';
+    pinIcon.style.alignItems = 'center';
+    pinIcon.style.justifyContent = 'center';
+    pinIcon.style.fontSize = '12px';
+    pinIcon.style.lineHeight = '1';
     pinIcon.style.marginRight = '4px';
     pinButton.appendChild(pinIcon);
     
-    // Add pin text
+    // Add pin text (initially hidden)
     const pinText = document.createElement('span');
-    pinText.className = 'whitespace-nowrap overflow-hidden overflow-ellipsis';
+    pinText.className = 'pin-text';
     pinText.textContent = 'Pin';
+    pinText.style.display = 'none'; // Hide text by default
+    pinText.style.fontSize = '12px';
+    pinText.style.lineHeight = '1';
+    pinText.style.whiteSpace = 'nowrap';
+    pinText.style.overflow = 'hidden';
+    pinText.style.textOverflow = 'ellipsis';
     pinButton.appendChild(pinText);
+    
+    // Show text on hover
+    pinButton.addEventListener('mouseenter', () => {
+        pinText.style.display = 'inline';
+        pinButton.style.paddingRight = '8px';
+    });
+    
+    pinButton.addEventListener('mouseleave', () => {
+        pinText.style.display = 'none';
+        pinButton.style.paddingRight = '6px';
+    });
     
     // Add unique ID for debugging
     const buttonId = `pin-button-${Date.now()}`;
@@ -386,15 +432,36 @@ function extractProductNumber(text, returnElement = false) {
         return returnElement ? [] : null;
     }
     
-    // Clean the text - remove any non-breaking spaces
+    // Clean the text - remove any non-breaking spaces and normalize
     const cleanText = text.replace(/\u00A0/g, ' ').trim();
     console.log('Cleaned text:', JSON.stringify(cleanText));
     
-    // Find all numbers in the text, including those within Thai text
-    const numberMatches = cleanText.match(/\d+/g) || [];
-    const numbers = [...new Set(numberMatches)]; // Remove duplicates
+    // Find all numbers in the text, including those within Thai text and emojis
+    // This regex matches:
+    // 1. Any sequence of digits (\d+)
+    // 2. Numbers with Thai text around them (e.g., ตะกร้า85, 85ค่ะ, ตะกร้า6 เครื่องดำ)
+    const numberMatches = [];
     
-    console.log('Number matches:', numbers);
+    // First, find all numbers in the text, regardless of surrounding characters
+    const numberRegex = /(\d+)/g;
+    let match;
+    while ((match = numberRegex.exec(cleanText)) !== null) {
+        if (match[1]) {
+            numberMatches.push(match[1]);
+        }
+    }
+    
+    // Also look for numbers that might be at the boundary of Thai text
+    const thaiBoundaryRegex = /([\u0E00-\u0E7F])(\d+)|(\d+)([\u0E00-\u0E7F])/g;
+    while ((match = thaiBoundaryRegex.exec(cleanText)) !== null) {
+        if (match[2]) numberMatches.push(match[2]);  // Number after Thai
+        if (match[3]) numberMatches.push(match[3]);  // Number before Thai
+    }
+    
+    // Remove duplicates and filter out empty strings
+    const numbers = [...new Set(numberMatches)].filter(Boolean);
+    
+    console.log('Extracted numbers:', numbers, 'from text:', cleanText);
     
     if (numbers.length > 0) {
         console.log(`Found ${numbers.length} unique numbers in text`);
@@ -428,9 +495,54 @@ function extractProductNumber(text, returnElement = false) {
     return returnElement ? [] : null;
 }
 
+// Function to create product number elements from text
+function createProductNumberElementsFromText(text) {
+    console.log('Creating product number elements from text:', text);
+    
+    if (!text || typeof text !== 'string') {
+        console.error('Invalid text provided to createProductNumberElementsFromText');
+        return [];
+    }
+    
+    // Find all numbers in the text
+    const numberMatches = text.match(/\d+/g) || [];
+    console.log('Found numbers in text:', numberMatches);
+    
+    if (numberMatches.length === 0) {
+        console.log('No numbers found in text');
+        return [];
+    }
+    
+    // Create product number elements for each number
+    const elements = [];
+    const uniqueNumbers = [...new Set(numberMatches)]; // Remove duplicates
+    
+    for (const number of uniqueNumbers) {
+        try {
+            const element = createProductNumberElement(number);
+            if (element) {
+                elements.push(element);
+            }
+        } catch (error) {
+            console.error(`Error creating element for number ${number}:`, error);
+        }
+    }
+    
+    console.log(`Created ${elements.length} product number elements`);
+    return elements;
+}
+
 // Function to create a product number element with pin button
 function createProductNumberElement(number) {
     console.log('=== CREATING PRODUCT NUMBER ELEMENT ===', { number });
+    
+    if (!number) {
+        console.error('No number provided to createProductNumberElement');
+        return null;
+    }
+    
+    // Ensure number is a string and trim any whitespace
+    number = String(number).trim();
     
     // Create container for the product number and pin button
     const container = document.createElement('span');
@@ -447,6 +559,8 @@ function createProductNumberElement(number) {
         background-color: #f5f5f5;
         border: 1px solid #e0e0e0;
         user-select: none;
+        white-space: nowrap;
+        line-height: 1.2;
     `;
     
     // Create the product number text element
@@ -464,6 +578,32 @@ function createProductNumberElement(number) {
     container.innerHTML = ''; // Clear any existing content
     container.appendChild(numberElement);
     container.appendChild(pinButton);
+    
+    // Ensure the container has proper display and alignment
+    container.style.display = 'inline-flex';
+    container.style.alignItems = 'center';
+    container.style.justifyContent = 'center';
+    container.style.verticalAlign = 'middle';
+    container.style.lineHeight = '1.2';
+    
+    // Ensure the pin button is visible and properly aligned
+    if (pinButton) {
+        pinButton.style.display = 'inline-flex';
+        pinButton.style.alignItems = 'center';
+        pinButton.style.justifyContent = 'center';
+        pinButton.style.padding = '2px 4px';
+        pinButton.style.margin = '0 0 0 4px';
+        pinButton.style.borderRadius = '4px';
+        pinButton.style.backgroundColor = '#f8f8f8';
+        pinButton.style.border = '1px solid #e0e0e0';
+        pinButton.style.cursor = 'pointer';
+        pinButton.style.transition = 'all 0.2s';
+        pinButton.style.verticalAlign = 'middle';
+        pinButton.style.fontSize = '12px';
+        pinButton.style.lineHeight = '1';
+        pinButton.style.minWidth = '40px';
+        pinButton.style.height = '20px';
+    }
     
     // Add click handler for the container (for the number part)
     const clickHandler = function(e) {
@@ -492,7 +632,7 @@ function createProductNumberElement(number) {
     console.log('Created product number element:', {
         container: container.outerHTML,
         numberElement: numberElement.outerHTML,
-        pinButton: pinButton.outerHTML
+        pinButton: pinButton ? pinButton.outerHTML : 'No pin button'
     });
     
     return container;
@@ -565,26 +705,74 @@ function handleProductNumberClick(e, productNumber) {
 
 // Function to handle chat message click
 function handleChatMessageClick(e) {
+    console.log('Chat message clicked:', {
+        target: e.target,
+        classList: e.target.classList ? Array.from(e.target.classList) : 'no-classlist',
+        tagName: e.target.tagName,
+        text: e.target.textContent
+    });
+    
     // Check if we're clicking on a pin button or its children
     const pinButton = e.target.closest('.pin-button, .m4b-button, [data-pin-button]');
     if (pinButton) {
-        console.log('Pin button clicked in message handler, letting button handle it', pinButton);
+        console.log('Pin button clicked in message handler, letting button handle it', {
+            pinButton: pinButton,
+            classList: Array.from(pinButton.classList),
+            text: pinButton.textContent
+        });
         // Don't do anything - let the button's own click handler handle it
         return;
     }
     
-    // Check if we're clicking on a product number (but not on a pin button inside it)
-    const productElement = e.target.closest('.product-number-container');
-    if (!productElement || e.target.closest('.pin-button, .m4b-button, [data-pin-button]')) {
-        console.log('Not a product number click or click was on pin button, ignoring');
+    // Check if we're clicking on a product number container or a direct number in the message
+    let productElement = e.target.closest('.product-number-container');
+    let productNumber = null;
+    
+    if (productElement) {
+        // If we found a product number container, get the number from its dataset
+        productNumber = productElement.dataset.productNumber;
+        console.log('Found product number container:', { productElement, productNumber });
+    } else {
+        // If no container was found, try to extract the number from the clicked text
+        const clickedText = e.target.textContent || '';
+        console.log('No product number container found, checking text:', clickedText);
+        
+        // Look for numbers in the clicked text
+        const numberMatch = clickedText.match(/\d+/);
+        if (numberMatch) {
+            productNumber = numberMatch[0];
+            console.log('Extracted number from text:', productNumber);
+            
+            // Create a temporary product element for handling the click
+            productElement = createProductNumberElement(productNumber);
+            if (productElement) {
+                console.log('Created temporary product element for number:', productNumber);
+            }
+        }
+    }
+    
+    if (!productElement || !productNumber) {
+        console.log('No product number found in clicked element');
         return;
     }
     
-    // Handle product number click
-    const productNumber = productElement.dataset.productNumber;
+    if (e.target.closest('.pin-button, .m4b-button, [data-pin-button]')) {
+        console.log('Click was on a pin button inside product container, ignoring');
+        return;
+    }
+    
+    console.log('Handling click for product number:', productNumber);
+    console.log('Product element found:', {
+        productElement: productElement,
+        dataset: { ...productElement.dataset },
+        html: productElement.outerHTML
+    });
+    
     if (productNumber) {
         console.log('Product number clicked, handling scroll for #' + productNumber);
         handleProductNumberClick(e, productNumber);
+    } else {
+        console.warn('Product element found but no productNumber in dataset:', productElement);
     }
 }
 
@@ -593,22 +781,168 @@ const handleMessageClick = handleChatMessageClick;
 
 // Function to process chat message and add pin buttons
 function processChatMessage(messageElement) {
-    // Skip if already processed or if it's a system message
-    if (messageElement.dataset.processed === 'true' || 
-        messageElement.closest('[class*="system"], [class*="System"], [class*="notification"]')) {
+    console.log('=== PROCESSING CHAT MESSAGE ===');
+    
+    // Skip if already processed
+    if (messageElement.dataset.processed === 'true') {
+        console.log('Message already processed, skipping');
         return;
     }
+    
+    // Skip system messages
+    if (messageElement.closest('[class*="system"], [class*="System"], [class*="notification"]')) {
+        console.log('System message, skipping');
+        return;
+    }
+    
+    // Skip if no text content
+    const text = messageElement.textContent || '';
+    if (!text.trim()) {
+        console.log('Empty message, skipping');
+        return;
+    }
+    
+    console.log('Processing message:', { 
+        text: text,
+        element: messageElement 
+    });
+    
+    // Mark as processed to prevent duplicate processing
+    messageElement.dataset.processed = 'true';
     
     try {
         console.log('=== PROCESSING CHAT MESSAGE ===');
         console.log('Message element:', messageElement);
         console.log('Message HTML:', messageElement.outerHTML);
         
+        // Get text content while preserving whitespace for better number detection
         const text = messageElement.textContent.trim();
         console.log('Message text:', text);
         
-        const productElements = extractProductNumber(text, true);
+        // Skip if empty or already processed
+        if (!text || messageElement.dataset.processed === 'true') {
+            console.log('Message empty or already processed, skipping');
+            return;
+        }
+        
+        // Skip system messages
+        if (messageElement.closest('[class*="system"], [class*="System"], [class*="notification"]')) {
+            console.log('System message, skipping');
+            return;
+        }
+        
+        // Mark as processed to prevent duplicate processing
+        messageElement.dataset.processed = 'true';
+        
+        // First, try to extract product numbers using the normal method
+        console.log('Attempting to extract product numbers...');
+        let productElements = extractProductNumber(text, true);
         console.log('Extracted product elements:', productElements);
+        
+        // If no product numbers found, try a more aggressive approach
+        if (!productElements || productElements.length === 0) {
+            console.log('No product numbers found, trying alternative extraction methods');
+            
+            // Method 1: Look for any numbers in the text
+            const numberMatches = text.match(/\d+/g) || [];
+            console.log('Found numbers in text:', numberMatches);
+            
+            if (numberMatches.length > 0) {
+                console.log('Creating product number elements for found numbers');
+                const newElements = [];
+                
+                // Process each number match
+                for (const num of numberMatches) {
+                    try {
+                        console.log('Creating element for number:', num);
+                        const element = createProductNumberElement(num);
+                        if (element) {
+                            console.log('Successfully created element for', num);
+                            newElements.push({
+                                number: num,
+                                element: element,
+                                position: text.indexOf(num)
+                            });
+                        }
+                    } catch (error) {
+                        console.error(`Error creating element for number ${num}:`, error);
+                    }
+                }
+                
+                if (newElements.length > 0) {
+                    // Sort by position in the original text
+                    newElements.sort((a, b) => a.position - b.position);
+                    
+                    // Create a document fragment to build the message
+                    const fragment = document.createDocumentFragment();
+                    let lastIndex = 0;
+                    
+                    // Process each product number in the message
+                    newElements.forEach((item, index) => {
+                        const { number, element, position } = item;
+                        
+                        // Add text before the number
+                        if (position > lastIndex) {
+                            const beforeText = text.substring(lastIndex, position);
+                            if (beforeText.trim()) {
+                                fragment.appendChild(document.createTextNode(beforeText));
+                            }
+                        }
+                        
+                        // Add the product number element
+                        fragment.appendChild(element);
+                        
+                        // Update the last index
+                        lastIndex = position + number.length;
+                    });
+                    
+                    // Add any remaining text
+                    if (lastIndex < text.length) {
+                        const remainingText = text.substring(lastIndex);
+                        if (remainingText.trim()) {
+                            fragment.appendChild(document.createTextNode(remainingText));
+                        }
+                    }
+                    
+                    // Create a wrapper for the message content
+                    const wrapper = document.createElement('span');
+                    wrapper.className = 'message-content-wrapper';
+                    wrapper.style.display = 'inline';
+                    wrapper.style.whiteSpace = 'pre-wrap';
+                    wrapper.style.position = 'relative';
+                    wrapper.style.zIndex = '1';
+                    
+                    // Add the fragment to the wrapper
+                    wrapper.appendChild(fragment);
+                    
+                    // Replace the message content
+                    messageElement.innerHTML = '';
+                    messageElement.appendChild(wrapper);
+                    
+                    // Add click handler
+                    messageElement.style.cursor = 'pointer';
+                    messageElement.removeEventListener('click', handleMessageClick);
+                    messageElement.addEventListener('click', handleMessageClick);
+                    
+                    // Ensure pin buttons are visible and clickable
+                    const pinButtons = messageElement.querySelectorAll('.pin-button');
+                    pinButtons.forEach(btn => {
+                        btn.style.display = 'inline-flex';
+                        btn.style.alignItems = 'center';
+                        btn.style.justifyContent = 'center';
+                        btn.style.position = 'relative';
+                        btn.style.zIndex = '10';
+                        btn.style.pointerEvents = 'auto';
+                    });
+                    
+                    console.log('Successfully updated message with product number elements');
+                    return;
+                }
+            }
+            
+            console.log('No valid product numbers could be extracted');
+            return;
+        }
         
         if (productElements && productElements.length > 0) {
             console.log(`Found ${productElements.length} product numbers in message`);
@@ -806,10 +1140,143 @@ function legacyHandleChatMessageClick(event) {
             }
         }
     }
+let chatObserver = null;
+
+// Function to replace message content with product number elements
+function replaceMessageContent(messageElement, originalText, productElements) {
+    console.log('Replacing message content with product numbers');
+    
+    try {
+        // Create a wrapper for the message content
+        const wrapper = document.createElement('div');
+        wrapper.className = 'message-content-wrapper';
+        wrapper.style.display = 'inline';
+        wrapper.style.whiteSpace = 'pre-wrap';
+        wrapper.style.wordBreak = 'break-word';
+        wrapper.style.lineHeight = '1.4';
+        
+        // Create a document fragment to build the message
+        const fragment = document.createDocumentFragment();
+        let lastIndex = 0;
+        
+        // Process each product number in the message
+        productElements.forEach((productElement, index) => {
+            if (!productElement) return;
+            
+            const number = productElement.dataset?.productNumber;
+            if (!number) return;
+            
+            // Get the number text without any pin emoji
+            const numberText = number;
+            let numberPos = originalText.indexOf(numberText, lastIndex);
+            
+            // If not found, try to find the number in the text
+            if (numberPos === -1) {
+                numberPos = originalText.indexOf(number, lastIndex);
+            }
+            
+            // If still not found, just append it
+            if (numberPos === -1) {
+                numberPos = lastIndex;
+            }
+            
+            // Add text before the number
+            if (numberPos > lastIndex) {
+                const beforeText = originalText.substring(lastIndex, numberPos);
+                if (beforeText.trim()) {
+                    fragment.appendChild(document.createTextNode(beforeText));
+                }
+            }
+            
+            // Add the product number with pin button
+            fragment.appendChild(productElement);
+            
+            // Update the last index to after this number
+            lastIndex = numberPos + numberText.length;
+        });
+        
+        // Add any remaining text after the last number
+        if (lastIndex < originalText.length) {
+            const remainingText = originalText.substring(lastIndex);
+            if (remainingText.trim()) {
+                fragment.appendChild(document.createTextNode(remainingText));
+            }
+        }
+        
+        // Add all elements to the wrapper
+        wrapper.appendChild(fragment);
+        
+        // Replace the message content
+        messageElement.innerHTML = '';
+        messageElement.appendChild(wrapper);
+        
+        // Make the message clickable (but not the pin buttons)
+        messageElement.style.cursor = 'pointer';
+        messageElement.removeEventListener('click', handleMessageClick);
+        messageElement.addEventListener('click', handleMessageClick);
+        
+        // Ensure pin buttons are visible and clickable
+        const pinButtons = messageElement.querySelectorAll('.pin-button');
+        pinButtons.forEach(btn => {
+            btn.style.display = 'inline-flex';
+            btn.style.alignItems = 'center';
+            btn.style.justifyContent = 'center';
+            btn.style.position = 'relative';
+            btn.style.zIndex = '10';
+            btn.style.pointerEvents = 'auto';
+        });
+        
+        // Style the product numbers
+        const productNumbers = messageElement.querySelectorAll('.product-number');
+        productNumbers.forEach(el => {
+            el.style.color = '#1890ff';
+            el.style.fontWeight = 'bold';
+            el.style.marginRight = '2px';
+        });
+        
+        console.log('Successfully replaced message content with product numbers');
+    } catch (error) {
+        console.error('Error in replaceMessageContent:', error);
+        // Fallback to original text if something goes wrong
+        messageElement.textContent = originalText;
+    }
 }
 
-// Store the observer to prevent multiple instances
-let chatObserver = null;
+// Helper function to style product elements in a message
+function styleProductElements(messageElement) {
+    // Make sure pin buttons are clickable and visible
+    const pinButtons = messageElement.querySelectorAll('.pin-button');
+    pinButtons.forEach(pinButton => {
+        pinButton.style.pointerEvents = 'auto';
+        pinButton.style.position = 'relative';
+        pinButton.style.zIndex = '10';
+        pinButton.style.display = 'inline-flex';
+        pinButton.style.alignItems = 'center';
+        pinButton.style.justifyContent = 'center';
+        pinButton.style.marginLeft = '4px';
+        pinButton.style.cursor = 'pointer';
+    });
+    
+    // Style the product numbers
+    const productNumbers = messageElement.querySelectorAll('.product-number');
+    productNumbers.forEach(numberEl => {
+        numberEl.style.fontWeight = 'bold';
+        numberEl.style.color = '#1890ff';
+        numberEl.style.marginRight = '4px';
+    });
+    
+    // Style the product number containers
+    const productContainers = messageElement.querySelectorAll('.product-number-container');
+    productContainers.forEach(container => {
+        container.style.display = 'inline-flex';
+        container.style.alignItems = 'center';
+        container.style.margin = '0 2px';
+        container.style.padding = '2px 6px';
+        container.style.borderRadius = '4px';
+        container.style.backgroundColor = '#f5f5f5';
+        container.style.border = '1px solid #e0e0e0';
+    });
+}
 
 // Function to process a single message
 function processSingleMessage(node) {
