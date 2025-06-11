@@ -5,12 +5,57 @@
 const PRODUCT_NUMBER_SELECTOR = '.number-need-to-hidden';
 const PRODUCT_ITEM_SELECTOR = '.sc-ktJbId';
 const PRODUCT_CONTAINER_SELECTOR = '.index-module__draggable-container--d+Ml2';
-// Selector for individual chat messages
-const CHAT_MESSAGE_SELECTOR = '.rounded-8.group.relative';
+// Selector for individual chat messages - using flexible class matching
+const CHAT_MESSAGE_SELECTOR = [
+    // TikTok Shop Live Streamer Dashboard
+    '[class*="message-item"], [class*="chat-message"], [class*="comment-item"], [class*="commentList"], [class*="messageContainer"]',
+    // Generic selectors
+    '.chat-message, .message-item, .comment-item, .comment, .message, .msg, .chat-msg',
+    // Data attribute selectors
+    '[data-e2e*="message"], [data-testid*="message"], [class*="message"][class*="item"]',
+    // More specific selectors
+    'div[class*="message"], div[class*="comment"], div[class*="chat"]',
+    // Generic fallback
+    'div[role="listitem"]'
+].join(',');
+
 // Selector for the chat container that holds all messages
-const CHAT_CONTAINER_SELECTOR = '.rounded-8.group.relative, [class*="hover:bg-[#F2F2F2]"], [class*="chat-message-list"], [class*="message-list"], [class*="chat-container"]';
-// Selector for the text content of a message
-const CHAT_MESSAGE_TEXT_SELECTOR = '.text-neutral-text1, [class*="message-content"], .text-body-s-regular';
+const CHAT_CONTAINER_SELECTOR = [
+    // TikTok Shop Live Streamer Dashboard
+    '.index-module__chat-room--M2e9G',
+    '.index-module__chat-room-container--Xp3pQ',
+    '.index-module__chat-message-list--QKz3x',
+    '.webcast-chatroom___list',
+    
+    // Common chat container classes
+    '.chat-container, .chat-room, .chat-window, .chat-box, .chat-panel',
+    '.message-list, .message-container, .message-area, .message-feed',
+    '.comment-list, .comment-container, .comment-area, .comment-feed',
+    
+    // TikTok specific classes
+    '.index-module__chat-room',
+    '.index-module__chat-container',
+    '.index-module__message-list',
+    
+    // Data attribute selectors
+    '[data-e2e*="chat"], [data-testid*="chat"], [data-e2e*="message"], [data-testid*="message"]',
+    
+    // Role-based selectors
+    '[role="log"], [role="list"], [role="feed"]',
+    
+    // Generic containers that might wrap chat
+    '.scroll-container, .scroll-area, .scroll-view, .scroll-content',
+    
+    // Last resort: any element that contains messages
+    'div[class*="chat"], div[class*="message"], div[class*="comment"]',
+    'div[class*="list"][class*="scroll"], div[class*="feed"][class*="scroll"]',
+    
+    // Body as final fallback
+    'body'
+].join(',');
+
+// Selector for the text content of a message - more flexible class matching
+const CHAT_MESSAGE_TEXT_SELECTOR = '.text-neutral-text1, [class*="message-content"], [class*="text-body"], [class*="text-neutral"]';
 
 // Debug function to log element info
 function logElementInfo(selector, name) {
@@ -172,82 +217,88 @@ function createPinButton(productNumber) {
     pinButton.setAttribute('data-pin-button', 'true');
     pinButton.setAttribute('aria-label', `Pin product ${productNumber}`);
     
-    // Apply styles
+    // Apply styles with !important to override any conflicting styles
     Object.assign(pinButton.style, {
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '2px 6px',
-        margin: '0 2px',
-        cursor: 'pointer',
-        border: '1px solid #d9d9d9',
-        borderRadius: '4px',
-        backgroundColor: '#f5f5f5',
-        color: '#262626',
-        fontSize: '12px',
-        lineHeight: '1',
-        transition: 'all 0.2s',
-        verticalAlign: 'middle',
-        minWidth: '24px',
-        height: '20px',
-        boxSizing: 'border-box',
-        outline: 'none'
+        display: 'inline-flex !important',
+        alignItems: 'center !important',
+        justifyContent: 'center !important',
+        padding: '2px 8px !important',
+        margin: '0 0 0 6px !important',
+        cursor: 'pointer !important',
+        border: '1px solid #d9d9d9 !important',
+        borderRadius: '4px !important',
+        backgroundColor: '#f5f5f5 !important',
+        color: '#262626 !important',
+        fontSize: '12px !important',
+        lineHeight: '1.2 !important',
+        transition: 'all 0.2s !important',
+        verticalAlign: 'middle !important',
+        minWidth: '40px !important',
+        height: '22px !important',
+        boxSizing: 'border-box !important',
+        outline: 'none !important',
+        position: 'relative !important',
+        zIndex: '1000 !important',
+        opacity: '1 !important',
+        visibility: 'visible !important',
+        pointerEvents: 'auto !important',
+        fontFamily: 'inherit !important',
+        fontWeight: '500 !important',
+        textTransform: 'none !important',
+        boxShadow: 'none !important'
     });
     
     // Add hover and active states
-    pinButton.addEventListener('mouseenter', () => {
-        pinButton.style.backgroundColor = '#e6f7ff';
-        pinButton.style.borderColor = '#69c0ff';
-        pinButton.style.color = '#096dd9';
+    const originalStyles = {};
+    
+    pinButton.addEventListener('mouseenter', (e) => {
+        // Save original styles
+        originalStyles.backgroundColor = pinButton.style.backgroundColor;
+        originalStyles.borderColor = pinButton.style.borderColor;
+        originalStyles.color = pinButton.style.color;
+        
+        // Apply hover styles
+        Object.assign(pinButton.style, {
+            backgroundColor: '#e6f7ff !important',
+            borderColor: '#69c0ff !important',
+            color: '#096dd9 !important'
+        });
     });
     
-    pinButton.addEventListener('mouseleave', () => {
+    pinButton.addEventListener('mouseleave', (e) => {
         if (!pinButton.classList.contains('pinned')) {
-            pinButton.style.backgroundColor = '#f5f5f5';
-            pinButton.style.borderColor = '#d9d9d9';
-            pinButton.style.color = '#262626';
+            Object.assign(pinButton.style, {
+                backgroundColor: '#f5f5f5 !important',
+                borderColor: '#d9d9d9 !important',
+                color: '#262626 !important'
+            });
         }
     });
     
     // Add pin icon
     const pinIcon = document.createElement('span');
     pinIcon.textContent = '📌';
-    pinIcon.style.display = 'inline-flex';
-    pinIcon.style.alignItems = 'center';
-    pinIcon.style.justifyContent = 'center';
-    pinIcon.style.fontSize = '12px';
-    pinIcon.style.lineHeight = '1';
-    pinIcon.style.marginRight = '4px';
-    pinButton.appendChild(pinIcon);
+    pinIcon.style.display = 'inline-flex !important';
+    pinIcon.style.alignItems = 'center !important';
+    pinIcon.style.justifyContent = 'center !important';
+    pinIcon.style.marginRight = '4px !important';
+    pinIcon.style.fontSize = '12px !important';
+    pinIcon.style.lineHeight = '1 !important';
     
-    // Add pin text (initially hidden)
+    // Add pin text
     const pinText = document.createElement('span');
-    pinText.className = 'pin-text';
     pinText.textContent = 'Pin';
-    pinText.style.display = 'none'; // Hide text by default
-    pinText.style.fontSize = '12px';
-    pinText.style.lineHeight = '1';
-    pinText.style.whiteSpace = 'nowrap';
-    pinText.style.overflow = 'hidden';
-    pinText.style.textOverflow = 'ellipsis';
+    pinText.style.overflow = 'hidden !important';
+    pinText.style.textOverflow = 'ellipsis !important';
+    pinText.style.whiteSpace = 'nowrap !important';
+    pinText.style.fontSize = '12px !important';
+    pinText.style.lineHeight = '1.2 !important';
+    
+    // Add elements to button
+    pinButton.appendChild(pinIcon);
     pinButton.appendChild(pinText);
     
-    // Show text on hover
-    pinButton.addEventListener('mouseenter', () => {
-        pinText.style.display = 'inline';
-        pinButton.style.paddingRight = '8px';
-    });
-    
-    pinButton.addEventListener('mouseleave', () => {
-        pinText.style.display = 'none';
-        pinButton.style.paddingRight = '6px';
-    });
-    
-    // Add unique ID for debugging
-    const buttonId = `pin-button-${Date.now()}`;
-    pinButton.id = buttonId;
-    
-    // Click handler function
+    // Add click handler with error handling
     const handlePinClick = async (e) => {
         if (e) {
             e.preventDefault();
@@ -260,33 +311,36 @@ function createPinButton(productNumber) {
         
         // Update UI immediately for better UX
         pinButton.classList.toggle('pinned', isNowPinned);
-        pinButton.classList.toggle('arco-btn-status-warning', isNowPinned);
         pinIcon.textContent = isNowPinned ? '📍' : '📌';
         
+        // Update button appearance based on pinned state
+        if (isNowPinned) {
+            Object.assign(pinButton.style, {
+                backgroundColor: '#e6f7ff !important',
+                borderColor: '#69c0ff !important',
+                color: '#096dd9 !important'
+            });
+            pinButton.title = 'Unpin this product';
+            pinText.textContent = 'Pinned';
+        } else {
+            Object.assign(pinButton.style, {
+                backgroundColor: '#f5f5f5 !important',
+                borderColor: '#d9d9d9 !important',
+                color: '#262626 !important'
+            });
+            pinButton.title = 'Pin this product';
+            pinText.textContent = 'Pin';
+        }
+        
         try {
-            // Find the product in the product list
-            const productItem = findProductByNumber(productNumber);
-            if (!productItem) {
+            // Find and scroll to the product
+            const productFound = scrollToProductNumber(productNumber);
+            if (!productFound) {
                 throw new Error(`Product #${productNumber} not found`);
             }
             
-            // Find the pin button in the product item
-            let pinButton = findPinButtonInProduct(productItem);
-            if (!pinButton) {
-                throw new Error('Pin button not found in product item');
-            }
-            
-            // Scroll the button into view
-            pinButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            
-            // Wait for scrolling to complete
-            await new Promise(resolve => setTimeout(resolve, 300));
-            
-            // Click the button
-            simulateNaturalClick(pinButton);
-            
             // Show success feedback
-            showUserFeedback(`Product #${productNumber} ${isNowPinned ? 'pinned' : 'unpinned'}!`, false);
+            showUserFeedback(`Scrolled to product #${productNumber}`, false);
             
         } catch (error) {
             console.error('Error handling pin click:', error);
@@ -294,65 +348,19 @@ function createPinButton(productNumber) {
             
             // Revert UI state on error
             pinButton.classList.toggle('pinned');
-            pinButton.classList.toggle('arco-btn-status-warning');
             pinIcon.textContent = pinButton.classList.contains('pinned') ? '📍' : '📌';
         }
     };
     
-    // Helper function to find pin button in product item
-    function findPinButtonInProduct(productItem) {
-        // Common selectors for known pin buttons
-        const selectors = [
-            '[data-testid="pin-button"]',
-            '[aria-label*="pin" i]',
-            'button[class*="pin" i]',
-            '[role="button"][aria-pressed]'
-        ];
-
-        for (const selector of selectors) {
-            const btn = productItem.querySelector(selector);
-            if (btn) {
-                return btn;
-            }
-        }
-
-        // Fallback: search all buttons and match text manually
-        const buttons = Array.from(productItem.querySelectorAll('button'));
-        for (const button of buttons) {
-            const text = button.innerText || button.textContent || '';
-            if (/pin|ปักหมุด/i.test(text)) {
-                return button;
-            }
-        }
-        return null;
-    }
+    // Add unique ID for debugging
+    const buttonId = 'pin-button-' + Date.now();
+    pinButton.id = buttonId;
     
-    // Helper function to simulate natural click
-    function simulateNaturalClick(element) {
-        if (!element) return;
-        
-        // Focus the element
-        if (element.focus) element.focus();
-        
-        // Get element position
-        const rect = element.getBoundingClientRect();
-        const x = rect.left + rect.width / 2;
-        const y = rect.top + rect.height / 2;
-        
-        // Create and dispatch mouse events
-        const events = [
-            new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y }),
-            new FocusEvent('focus', { bubbles: true }),
-            new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y }),
-            new MouseEvent('click', { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y })
-        ];
-        
-        // Dispatch events with small delays
-        events.forEach((event, index) => {
-            setTimeout(() => element.dispatchEvent(event), index * 50);
-        });
-    }
+    // Debug logging
+    console.log('Created pin button:', pinButton);
+    console.log('Pin button ID:', buttonId);
     
+    // Force a reflow to ensure styles are applied
     // Add hover effects
     pinButton.addEventListener('mouseenter', () => {
         pinButton.style.transform = 'scale(1.1)';
@@ -364,15 +372,38 @@ function createPinButton(productNumber) {
         pinButton.style.filter = 'none';
     });
     
-    // Add event listeners for click handling
-    pinButton.addEventListener('click', handlePinClick, true);  // Capture phase
-    pinButton.addEventListener('click', handlePinClick);        // Bubbling phase
-    
-    // Debug logging
-    console.log('Created pin button:', pinButton);
-    console.log('Pin button ID:', buttonId);
+    // Add the click handler to the button
+    pinButton.addEventListener('click', handlePinClick, true);  // Use capture phase
     
     return pinButton;
+}
+
+// Helper function to find pin button in product item
+function findPinButtonInProduct(productItem) {
+    // Common selectors for known pin buttons
+    const selectors = [
+        '[data-testid="pin-button"]',
+        '[aria-label*="pin" i]',
+        'button[class*="pin" i]',
+        '[role="button"][aria-pressed]'
+    ];
+
+    for (const selector of selectors) {
+        const btn = productItem.querySelector(selector);
+        if (btn) {
+            return btn;
+        }
+    }
+
+    // Fallback: search all buttons and match text manually
+    const buttons = Array.from(productItem.querySelectorAll('button'));
+    for (const button of buttons) {
+        const text = button.innerText || button.textContent || '';
+        if (/pin|ปักหมุด/i.test(text)) {
+            return button;
+        }
+    }
+    return null;
 }
 
 // Function to find product by number in the product list
@@ -875,67 +906,21 @@ function processChatMessage(messageElement) {
                     // Sort by position in the original text
                     newElements.sort((a, b) => a.position - b.position);
                     
-                    // Create a document fragment to build the message
-                    const fragment = document.createDocumentFragment();
-                    let lastIndex = 0;
+                    // Call replaceMessageContent to handle the message content replacement
+                    replaceMessageContent(
+                        messageElement, 
+                        text, 
+                        newElements.map(item => ({
+                            element: item.element,
+                            number: item.number,
+                            position: item.position
+                        }))
+                    );
                     
-                    // Process each product number in the message
-                    newElements.forEach((item, index) => {
-                        const { number, element, position } = item;
-                        
-                        // Add text before the number
-                        if (position > lastIndex) {
-                            const beforeText = text.substring(lastIndex, position);
-                            if (beforeText.trim()) {
-                                fragment.appendChild(document.createTextNode(beforeText));
-                            }
-                        }
-                        
-                        // Add the product number element
-                        fragment.appendChild(element);
-                        
-                        // Update the last index
-                        lastIndex = position + number.length;
-                    });
-                    
-                    // Add any remaining text
-                    if (lastIndex < text.length) {
-                        const remainingText = text.substring(lastIndex);
-                        if (remainingText.trim()) {
-                            fragment.appendChild(document.createTextNode(remainingText));
-                        }
-                    }
-                    
-                    // Create a wrapper for the message content
-                    const wrapper = document.createElement('span');
-                    wrapper.className = 'message-content-wrapper';
-                    wrapper.style.display = 'inline';
-                    wrapper.style.whiteSpace = 'pre-wrap';
-                    wrapper.style.position = 'relative';
-                    wrapper.style.zIndex = '1';
-                    
-                    // Add the fragment to the wrapper
-                    wrapper.appendChild(fragment);
-                    
-                    // Replace the message content
-                    messageElement.innerHTML = '';
-                    messageElement.appendChild(wrapper);
-                    
-                    // Add click handler
+                    // Add click handler to the message
                     messageElement.style.cursor = 'pointer';
                     messageElement.removeEventListener('click', handleMessageClick);
                     messageElement.addEventListener('click', handleMessageClick);
-                    
-                    // Ensure pin buttons are visible and clickable
-                    const pinButtons = messageElement.querySelectorAll('.pin-button');
-                    pinButtons.forEach(btn => {
-                        btn.style.display = 'inline-flex';
-                        btn.style.alignItems = 'center';
-                        btn.style.justifyContent = 'center';
-                        btn.style.position = 'relative';
-                        btn.style.zIndex = '10';
-                        btn.style.pointerEvents = 'auto';
-                    });
                     
                     console.log('Successfully updated message with product number elements');
                     return;
@@ -948,46 +933,24 @@ function processChatMessage(messageElement) {
         
         if (productElements && productElements.length > 0) {
             console.log(`Found ${productElements.length} product numbers in message`);
-            const wrapper = document.createElement('div');
-            wrapper.className = 'message-content-wrapper';
-            wrapper.style.display = 'inline-flex';
-            wrapper.style.alignItems = 'center';
-            wrapper.style.flexWrap = 'wrap';
-            wrapper.style.gap = '4px';
-            wrapper.style.width = '100%';
             
-            // Create a document fragment to build the message
-            const fragment = document.createDocumentFragment();
+            // Prepare product elements with their positions
+            const elementsWithPositions = [];
             let lastIndex = 0;
             
-            // Process each product number in the message
-            productElements.forEach((productElement, index) => {
-                console.log(`Processing product element ${index}:`, productElement);
-                
-                if (!productElement) {
-                    console.warn('Skipping null product element at index', index);
-                    return;
-                }
+            // Process each product element to find its position in the text
+            for (const productElement of productElements) {
+                if (!productElement) continue;
                 
                 const number = productElement.dataset?.productNumber;
-                console.log('Product number from dataset:', number);
+                if (!number) continue;
                 
-                if (!number) {
-                    console.warn('Product element missing data-product-number attribute', productElement);
-                    return;
-                }
-                
-                // Try to find the product number element
+                // Ensure the product element has proper structure
                 let numberElement = productElement.querySelector('.product-number');
-                let numberText;
-                
                 if (!numberElement) {
-                    console.warn('Product element missing .product-number element, creating a new one');
-                    
-                    // Create a new number element
                     numberElement = document.createElement('span');
                     numberElement.className = 'product-number';
-                    numberElement.textContent = number; // Use the number from dataset as fallback
+                    numberElement.textContent = number;
                     
                     // Clear any existing content and add our elements
                     productElement.innerHTML = '';
@@ -1000,84 +963,41 @@ function processChatMessage(messageElement) {
                     }
                 }
                 
-                numberText = numberElement.textContent;
-                console.log('Number text:', numberText);
+                const numberText = numberElement.textContent;
+                const position = text.indexOf(numberText, lastIndex);
                 
-                // Find the position of this number in the original text
-                const numberPos = text.indexOf(numberText, lastIndex);
-                
-                if (numberPos > lastIndex) {
-                    // Add text before the number
-                    const beforeText = text.substring(lastIndex, numberPos);
-                    if (beforeText.trim()) {
-                        fragment.appendChild(document.createTextNode(beforeText));
-                    }
-                }
-                
-                // Add the product number with pin button
-                fragment.appendChild(productElement);
-                
-                // Update the last index to after this number
-                lastIndex = numberPos + numberText.length;
-                
-                // Add a space after the product number if there's more text
-                if (index < productElements.length - 1) {
-                    fragment.appendChild(document.createTextNode(' '));
-                }
-            });
-            
-            // Add any remaining text after the last number
-            if (lastIndex < text.length) {
-                const remainingText = text.substring(lastIndex);
-                if (remainingText.trim()) {
-                    fragment.appendChild(document.createTextNode(remainingText));
+                if (position !== -1) {
+                    elementsWithPositions.push({
+                        element: productElement,
+                        number: number,
+                        position: position,
+                        text: numberText
+                    });
+                    lastIndex = position + numberText.length;
                 }
             }
             
-            // Add all elements to the wrapper
-            wrapper.appendChild(fragment);
+            // Sort elements by their position in the text
+            elementsWithPositions.sort((a, b) => a.position - b.position);
             
-            // Replace the message content
-            messageElement.innerHTML = '';
-            messageElement.appendChild(wrapper);
-            
-            // Make the message clickable (but not the pin buttons)
-            messageElement.style.cursor = 'pointer';
-            messageElement.removeEventListener('click', handleMessageClick);
-            messageElement.addEventListener('click', handleMessageClick);
-            
-            // Make sure pin buttons are clickable and visible
-            const pinButtons = messageElement.querySelectorAll('.pin-button');
-            pinButtons.forEach(pinButton => {
-                pinButton.style.pointerEvents = 'auto';
-                pinButton.style.position = 'relative';
-                pinButton.style.zIndex = '10';
-                pinButton.style.display = 'inline-flex';
-                pinButton.style.alignItems = 'center';
-                pinButton.style.justifyContent = 'center';
-                pinButton.style.marginLeft = '4px';
-                pinButton.style.cursor = 'pointer';
-            });
-            
-            // Style the product numbers
-            const productNumbers = messageElement.querySelectorAll('.product-number');
-            productNumbers.forEach(numberEl => {
-                numberEl.style.fontWeight = 'bold';
-                numberEl.style.color = '#1890ff';
-                numberEl.style.marginRight = '4px';
-            });
-            
-            // Style the product number containers
-            const productContainers = messageElement.querySelectorAll('.product-number-container');
-            productContainers.forEach(container => {
-                container.style.display = 'inline-flex';
-                container.style.alignItems = 'center';
-                container.style.margin = '0 2px';
-                container.style.padding = '2px 6px';
-                container.style.borderRadius = '4px';
-                container.style.backgroundColor = '#f5f5f5';
-                container.style.border = '1px solid #e0e0e0';
-            });
+            // Call replaceMessageContent to handle the message content replacement
+            if (elementsWithPositions.length > 0) {
+                replaceMessageContent(
+                    messageElement,
+                    text,
+                    elementsWithPositions.map(item => ({
+                        element: item.element,
+                        number: item.number,
+                        position: item.position,
+                        text: item.text
+                    }))
+                );
+                
+                // Add click handler to the message
+                messageElement.style.cursor = 'pointer';
+                messageElement.removeEventListener('click', handleMessageClick);
+                messageElement.addEventListener('click', handleMessageClick);
+            }
         }
     } catch (error) {
         console.error('Error processing chat message:', error);
@@ -1279,97 +1199,281 @@ function styleProductElements(messageElement) {
 
 // Function to process a single message
 function processSingleMessage(node) {
-    if (node.nodeType !== Node.ELEMENT_NODE) return;
-    
-    let message = null;
-    
-    if (node.matches(CHAT_MESSAGE_SELECTOR)) {
-        message = node;
-    } else {
-        message = node.querySelector(CHAT_MESSAGE_SELECTOR);
-        if (!message) {
-            message = node.closest(CHAT_MESSAGE_SELECTOR);
+    try {
+        if (!node || node.nodeType !== Node.ELEMENT_NODE) {
+            return;
         }
-    }
-    
-    if (message && !message.dataset.processed) {
-        processChatMessage(message);
+        
+        console.log('Processing node:', {
+            nodeName: node.nodeName,
+            className: node.className,
+            id: node.id || 'none',
+            text: node.textContent?.substring(0, 50) + (node.textContent?.length > 50 ? '...' : '')
+        });
+        
+        let message;
+        
+        // Check if this is a message element or contains one
+        if (node.matches && node.matches(CHAT_MESSAGE_SELECTOR)) {
+            message = node;
+            console.log('Node matches CHAT_MESSAGE_SELECTOR');
+        } else {
+            // Try to find a message element within this node
+            if (node.querySelector) {
+                message = node.querySelector(CHAT_MESSAGE_SELECTOR);
+                if (message) {
+                    console.log('Found message via querySelector');
+                }
+            }
+            
+            // If not found, try to find a parent that matches
+            if (!message && node.closest) {
+                message = node.closest(CHAT_MESSAGE_SELECTOR);
+                if (message) {
+                    console.log('Found message via closest');
+                }
+            }
+        }
+        
+        if (message) {
+            console.log('Processing message element:', {
+                className: message.className,
+                text: message.textContent?.substring(0, 100) + (message.textContent?.length > 100 ? '...' : '')
+            });
+            
+            if (!message.dataset.processed) {
+                processChatMessage(message);
+            } else {
+                console.log('Message already processed');
+            }
+        } else {
+            console.log('No message element found in node');
+        }
+    } catch (error) {
+        console.error('Error in processSingleMessage:', error);
     }
 }
 
 // Function to initialize chat observer for new messages
 function initChatObserver() {
-    // Don't initialize if already initialized
-    if (chatObserver) {
-        console.log('Chat observer already initialized');
-        return;
-    }
-    
-    console.log('Looking for chat container with selector:', CHAT_CONTAINER_SELECTOR);
-    const chatContainer = document.querySelector(CHAT_CONTAINER_SELECTOR);
-    
-    // Debug: Log all elements with class 'group' to help with debugging
-    if (!chatContainer) {
-        console.log('No chat container found with selector. Debug info:');
-        const allGroups = document.querySelectorAll('[class*="group"]');
-        console.log(`Found ${allGroups.length} elements with 'group' class`);
-        allGroups.forEach((el, i) => {
-            if (i < 5) { // Only log first 5 to avoid console spam
-                console.log(`Group element ${i + 1}:`, {
-                    classes: el.className,
-                    tag: el.tagName,
-                    text: el.textContent?.substring(0, 50) + (el.textContent?.length > 50 ? '...' : '')
+    try {
+        // Don't initialize if already initialized
+        if (chatObserver) {
+            console.log('Chat observer already initialized');
+            return;
+        }
+        
+        console.log('=== INITIALIZING CHAT OBSERVER ===');
+        
+        console.log('Searching for chat container with selector:', CHAT_CONTAINER_SELECTOR);
+        
+        // Get all potential chat containers
+        const allContainers = Array.from(document.querySelectorAll(CHAT_CONTAINER_SELECTOR));
+        
+        // Log all found containers for debugging
+        console.log(`Found ${allContainers.length} potential chat containers`);
+        allContainers.forEach((container, i) => {
+            try {
+                const messageCount = container.querySelectorAll(CHAT_MESSAGE_SELECTOR).length;
+                console.log(`Container ${i + 1}:`, {
+                    tag: container.tagName,
+                    id: container.id || 'none',
+                    classes: container.className || 'none',
+                    children: container.children.length,
+                    messageCount: messageCount,
+                    text: container.textContent?.substring(0, 50) + (container.textContent?.length > 50 ? '...' : '')
                 });
+            } catch (error) {
+                console.error(`Error processing container ${i + 1}:`, error);
             }
         });
-    }
-    
-    if (chatContainer) {
-        console.log('Chat container found:', {
+        
+        // Find the most likely chat container (the one with the most messages)
+        let bestContainer = null;
+        let maxMessages = -1;
+        
+        allContainers.forEach(container => {
+            try {
+                // Skip body element unless it's the only container
+                if (container === document.body && allContainers.length > 1) {
+                    return;
+                }
+                
+                const messages = container.querySelectorAll(CHAT_MESSAGE_SELECTOR);
+                const messageCount = messages.length;
+                
+                // Check if this container has any scrollable area (common for chat containers)
+                const isScrollable = container.scrollHeight > container.clientHeight || 
+                                    container.scrollWidth > container.clientWidth;
+                
+                // Check if container has common chat-like classes or attributes
+                const hasChatAttrs = container.className && (
+                    container.className.toLowerCase().includes('chat') ||
+                    container.className.toLowerCase().includes('message') ||
+                    container.className.toLowerCase().includes('comment')
+                );
+                
+                // Calculate a score based on message count and other factors
+                let score = messageCount;
+                if (isScrollable) score += 5;
+                if (hasChatAttrs) score += 3;
+                if (container.getAttribute('role') === 'log' || 
+                    container.getAttribute('role') === 'list') score += 2;
+                
+                console.log('Container evaluation:', {
+                    tag: container.tagName,
+                    id: container.id || 'none',
+                    classes: container.className || 'none',
+                    messageCount: messageCount,
+                    isScrollable: isScrollable,
+                    hasChatAttrs: hasChatAttrs,
+                    score: score
+                });
+                
+                if (score > maxMessages) {
+                    maxMessages = score;
+                    bestContainer = container;
+                }
+            } catch (error) {
+                console.error('Error evaluating container:', error);
+            }
+        });
+        
+        const chatContainer = bestContainer;
+        
+        if (!chatContainer) {
+            const retryCount = (initChatObserver.retryCount || 0) + 1;
+            const maxRetries = 10; // Maximum number of retries
+            
+            if (retryCount > maxRetries) {
+                console.error(`Failed to find chat container after ${maxRetries} attempts. Giving up.`);
+                console.log('Document body structure:', {
+                    location: window.location.href,
+                    title: document.title,
+                    children: Array.from(document.body.children).map(el => ({
+                        tag: el.tagName,
+                        id: el.id || 'none',
+                        classes: el.className || 'none',
+                        children: el.children.length,
+                        text: el.textContent?.substring(0, 50) + (el.textContent?.length > 50 ? '...' : '')
+                    }))
+                });
+                return;
+            }
+            
+            console.warn(`No suitable chat container found (attempt ${retryCount}/${maxRetries}). Will retry...`);
+            
+            // Use a debounced retry with backoff
+            clearTimeout(initChatObserver.retryTimer);
+            const delay = Math.min(1000 * Math.pow(1.5, retryCount - 1), 5000); // Cap at 5s
+            initChatObserver.retryCount = retryCount;
+            initChatObserver.retryTimer = setTimeout(() => {
+                console.log(`Retrying chat container detection (attempt ${retryCount + 1}/${maxRetries})...`);
+                initChatObserver();
+            }, delay);
+            return;
+        }
+        
+        // Reset retry counter on success
+        initChatObserver.retryCount = 0;
+        
+        console.log('Using chat container:', {
             tag: chatContainer.tagName,
             classes: chatContainer.className,
-            id: chatContainer.id
+            id: chatContainer.id,
+            children: chatContainer.children.length
         });
         
-        // Process existing messages
-        const messages = chatContainer.querySelectorAll(CHAT_MESSAGE_SELECTOR);
-        console.log(`Found ${messages.length} existing messages`);
-        
-        messages.forEach((msg, i) => {
-            console.log(`Processing message ${i + 1}:`, {
-                text: msg.textContent?.substring(0, 50) + (msg.textContent?.length > 50 ? '...' : ''),
-                classes: msg.className
+        // Process existing messages with debounce
+        const processExistingMessages = () => {
+            const messages = Array.from(chatContainer.querySelectorAll(CHAT_MESSAGE_SELECTOR))
+                .filter(el => !el.dataset.processed);
+                
+            console.log(`Processing ${messages.length} unprocessed messages`);
+            
+            messages.forEach((msg, i) => {
+                try {
+                    console.log(`Processing message ${i + 1}:`, {
+                        text: msg.textContent?.substring(0, 100) + (msg.textContent?.length > 100 ? '...' : ''),
+                        classes: msg.className,
+                        id: msg.id || 'none'
+                    });
+                    processChatMessage(msg);
+                } catch (error) {
+                    console.error(`Error processing message ${i + 1}:`, error);
+                }
             });
-            processChatMessage(msg);
-        });
+        };
+        
+        // Initial processing
+        processExistingMessages();
         
         // Create a single observer for all mutations
         chatObserver = new MutationObserver((mutations) => {
-            console.log('Mutation observed:', mutations.length, 'changes');
-            mutations.forEach((mutation) => {
-                mutation.addedNodes.forEach(node => {
-                    console.log('New node added:', {
-                        nodeType: node.nodeType,
-                        nodeName: node.nodeName,
-                        classes: node.className || 'N/A'
+            try {
+                console.log('Mutation observed:', mutations.length, 'changes');
+                let hasNewMessages = false;
+                
+                mutations.forEach((mutation) => {
+                    mutation.addedNodes.forEach(node => {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            console.log('New node added:', {
+                                nodeType: node.nodeType,
+                                nodeName: node.nodeName,
+                                classes: node.className || 'N/A',
+                                text: node.textContent?.substring(0, 50) + '...',
+                                parentClasses: node.parentElement?.className || 'no-parent'
+                            });
+                            
+                            // Check if this node or any of its children is a message
+                            if (node.matches?.(CHAT_MESSAGE_SELECTOR) || 
+                                node.querySelector?.(CHAT_MESSAGE_SELECTOR)) {
+                                hasNewMessages = true;
+                            }
+                            
+                            processSingleMessage(node);
+                        }
                     });
-                    processSingleMessage(node);
                 });
-            });
+                
+                // If we added new messages, do a full rescan to catch any we might have missed
+                if (hasNewMessages) {
+                    setTimeout(processExistingMessages, 100);
+                }
+            } catch (error) {
+                console.error('Error in mutation observer:', error);
+            }
         });
         
-        // Start observing
-        chatObserver.observe(chatContainer, { 
-            childList: true, 
-            subtree: true 
-        });
+        // Start observing with aggressive settings to catch all changes
+        const observerConfig = {
+            childList: true,
+            subtree: true,
+            characterData: true,
+            characterDataOldValue: true
+        };
+        
+        chatObserver.observe(chatContainer, observerConfig);
+        
+        // Also observe the document for dynamic content loads
+        if (chatContainer !== document.documentElement) {
+            chatObserver.observe(document.documentElement, {
+                childList: true,
+                subtree: false
+            });
+        }
         
         console.log('Chat observer initialized successfully');
-    } else {
-        console.log('Chat container not found, will retry in 1 second...');
-        // Use a debounced retry
+        
+    } catch (error) {
+        console.error('Error initializing chat observer:', error);
+        
+        // Retry on error
         clearTimeout(initChatObserver.retryTimer);
-        initChatObserver.retryTimer = setTimeout(initChatObserver, 1000);
+        initChatObserver.retryTimer = setTimeout(() => {
+            console.log('Retrying chat observer initialization after error...');
+            initChatObserver();
+        }, 1000);
     }
 }
 
