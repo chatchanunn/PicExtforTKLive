@@ -1479,3 +1479,9 @@ setTimeout(() => {
         initProductScroller();
     }
 }, 5000);
+
+// Self-invoking function to ensure proper scoping
+(function() {
+    // Any additional initialization code can go here
+    console.log('TikTok Shop Enhancer: Initialization complete');
+})();
