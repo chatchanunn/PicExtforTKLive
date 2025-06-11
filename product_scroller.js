@@ -808,7 +808,6 @@ function processChatMessage(messageElement) {
     });
     
     // Mark as processed to prevent duplicate processing
-    messageElement.dataset.processed = 'true';
     
     try {
         console.log('=== PROCESSING CHAT MESSAGE ===');
@@ -946,10 +945,6 @@ function processChatMessage(messageElement) {
         
         if (productElements && productElements.length > 0) {
             console.log(`Found ${productElements.length} product numbers in message`);
-            // Mark as processed
-            messageElement.dataset.processed = 'true';
-            
-            // Create a wrapper for the message content
             const wrapper = document.createElement('div');
             wrapper.className = 'message-content-wrapper';
             wrapper.style.display = 'inline-flex';
