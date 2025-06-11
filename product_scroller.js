@@ -5,9 +5,12 @@
 const PRODUCT_NUMBER_SELECTOR = '.number-need-to-hidden';
 const PRODUCT_ITEM_SELECTOR = '.sc-ktJbId';
 const PRODUCT_CONTAINER_SELECTOR = '.index-module__draggable-container--d+Ml2';
-const CHAT_MESSAGE_SELECTOR = '[class*="chat-message"], [class*="message-"]';
-const CHAT_CONTAINER_SELECTOR = '[class*="chat-message-list"], [class*="message-list"], [class*="chat-container"]';
-const CHAT_MESSAGE_TEXT_SELECTOR = '.text-neutral-text1, [class*="message-content"]';
+// Selector for individual chat messages
+const CHAT_MESSAGE_SELECTOR = '.rounded-8.group.relative';
+// Selector for the chat container that holds all messages
+const CHAT_CONTAINER_SELECTOR = '.rounded-8.group.relative, [class*="hover:bg-[#F2F2F2]"], [class*="chat-message-list"], [class*="message-list"], [class*="chat-container"]';
+// Selector for the text content of a message
+const CHAT_MESSAGE_TEXT_SELECTOR = '.text-neutral-text1, [class*="message-content"], .text-body-s-regular';
 
 // Debug function to log element info
 function logElementInfo(selector, name) {
@@ -603,9 +606,6 @@ function createProductNumberElement(number) {
         pinButton.style.lineHeight = '1';
         pinButton.style.minWidth = '40px';
         pinButton.style.height = '20px';
-        console.log('[if state] Pin button created for product number:', number);
-    } else {
-        console.log('[else state] Problem ,No pin button created for product number:', number);
     }
     
     // Add click handler for the container (for the number part)
@@ -1301,22 +1301,60 @@ function processSingleMessage(node) {
 function initChatObserver() {
     // Don't initialize if already initialized
     if (chatObserver) {
+        console.log('Chat observer already initialized');
         return;
     }
     
+    console.log('Looking for chat container with selector:', CHAT_CONTAINER_SELECTOR);
     const chatContainer = document.querySelector(CHAT_CONTAINER_SELECTOR);
     
+    // Debug: Log all elements with class 'group' to help with debugging
+    if (!chatContainer) {
+        console.log('No chat container found with selector. Debug info:');
+        const allGroups = document.querySelectorAll('[class*="group"]');
+        console.log(`Found ${allGroups.length} elements with 'group' class`);
+        allGroups.forEach((el, i) => {
+            if (i < 5) { // Only log first 5 to avoid console spam
+                console.log(`Group element ${i + 1}:`, {
+                    classes: el.className,
+                    tag: el.tagName,
+                    text: el.textContent?.substring(0, 50) + (el.textContent?.length > 50 ? '...' : '')
+                });
+            }
+        });
+    }
+    
     if (chatContainer) {
-        console.log('Initializing chat observer...');
+        console.log('Chat container found:', {
+            tag: chatContainer.tagName,
+            classes: chatContainer.className,
+            id: chatContainer.id
+        });
         
         // Process existing messages
         const messages = chatContainer.querySelectorAll(CHAT_MESSAGE_SELECTOR);
-        messages.forEach(processChatMessage);
+        console.log(`Found ${messages.length} existing messages`);
+        
+        messages.forEach((msg, i) => {
+            console.log(`Processing message ${i + 1}:`, {
+                text: msg.textContent?.substring(0, 50) + (msg.textContent?.length > 50 ? '...' : ''),
+                classes: msg.className
+            });
+            processChatMessage(msg);
+        });
         
         // Create a single observer for all mutations
         chatObserver = new MutationObserver((mutations) => {
+            console.log('Mutation observed:', mutations.length, 'changes');
             mutations.forEach((mutation) => {
-                mutation.addedNodes.forEach(processSingleMessage);
+                mutation.addedNodes.forEach(node => {
+                    console.log('New node added:', {
+                        nodeType: node.nodeType,
+                        nodeName: node.nodeName,
+                        classes: node.className || 'N/A'
+                    });
+                    processSingleMessage(node);
+                });
             });
         });
         
