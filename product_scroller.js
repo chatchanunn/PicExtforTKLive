@@ -1140,6 +1140,7 @@ function legacyHandleChatMessageClick(event) {
             }
         }
     }
+}
 let chatObserver = null;
 
 // Function to replace message content with product number elements
