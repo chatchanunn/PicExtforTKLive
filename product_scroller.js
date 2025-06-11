@@ -603,8 +603,9 @@ function createProductNumberElement(number) {
         pinButton.style.lineHeight = '1';
         pinButton.style.minWidth = '40px';
         pinButton.style.height = '20px';
+        console.log('[if state] Pin button created for product number:', number);
     } else {
-        console.log('Problem ,No pin button created for product number:', number);
+        console.log('[else state] Problem ,No pin button created for product number:', number);
     }
     
     // Add click handler for the container (for the number part)
